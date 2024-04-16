@@ -6,6 +6,7 @@ from typing import Union
 import sys
 from warnings import warn
 EPSILON = sys.float_info.epsilon
+PRECISION =  torch.complex64
 
 def coh_vec_tmm_disp_mstack(pol:str,
                             N:Union[np.ndarray, torch.Tensor], 
@@ -167,13 +168,13 @@ def coh_vec_tmm_disp_mstack(pol:str,
     
     # M_list holds the transmission and reflection matrices from matrix-optics 
     
-    M_list = torch.zeros((num_stacks, num_angles, num_wavelengths, num_layers, 2, 2), dtype=torch.complex128, device=device)
+    M_list = torch.zeros((num_stacks, num_angles, num_wavelengths, num_layers, 2, 2), dtype=PRECISION, device=device)
     M_list[:, :, :, 1:-1, 0, 0] = torch.einsum('shji,sjhi->sjhi', 1 / (A + np.finfo(float).eps), 1 / t_list[:, :, :, 1:])
     M_list[:, :, :, 1:-1, 0, 1] = torch.einsum('shji,sjhi->sjhi', 1 / (A + np.finfo(float).eps), F / t_list[:, :, :, 1:])
     M_list[:, :, :, 1:-1, 1, 0] = torch.einsum('shji,sjhi->sjhi', A, F / t_list[:, :, :, 1:])
     M_list[:, :, :, 1:-1, 1, 1] = torch.einsum('shji,sjhi->sjhi', A, 1 / t_list[:, :, :, 1:])
-    Mtilde = torch.empty((num_stacks, num_angles, num_wavelengths, 2, 2), dtype=torch.complex128, device=device)
-    Mtilde[:, :, :] = make_2x2_tensor(1, 0, 0, 1, dtype=torch.complex128)
+    Mtilde = torch.empty((num_stacks, num_angles, num_wavelengths, 2, 2), dtype=PRECISION, device=device)
+    Mtilde[:, :, :] = make_2x2_tensor(1, 0, 0, 1, dtype=PRECISION)
 
     # contract the M_list matrix along the dimension of the layers, all
     for i in range(1, num_layers - 1):
@@ -225,12 +226,12 @@ def SnellLaw_vectorized(n, th):
     """
     # Important that the arcsin here is numpy.lib.scimath.arcsin, not
     # numpy.arcsin! (They give different results e.g. for arcsin(2).)
-    if th.dtype != torch.complex128:
-        warn('there is some problem with theta, the dtype is not complex')
-    if n.dtype != torch.complex128:
+    if th.dtype != PRECISION:
+        warn('there is some problem with theta, the dtype is not', PRECISION)
+    if n.dtype !=  PRECISION:
         warn('there is some problem with n, the dtype is not conplex')
-    th = th if th.dtype == torch.complex128 else th.type(torch.complex128)
-    n = n if n.dtype == torch.complex128 else n.type(torch.complex128)
+    th = th if th.dtype == PRECISION else th.type(PRECISION)
+    n = n if n.dtype == PRECISION else n.type(PRECISION)
 
     n0_ = torch.einsum('hk,j,hik->hjik', n[:,0], torch.sin(th), 1/n)
     angles = torch.asin(n0_)
@@ -483,7 +484,7 @@ def converter(data:Union[np.ndarray, torch.Tensor], device:str) -> torch.Tensor:
             data = torch.from_numpy(data.copy())
         else:
             raise ValueError('At least one of the inputs (i.e. N, Theta, ...) is not of type numpy.array or torch.Tensor!')
-    return data.type(torch.complex128).to(device)
+    return data.type(PRECISION).to(device)
 
 def numpy_converter(data:torch.Tensor)->np.ndarray:
     data = data.detach().cpu().numpy()
