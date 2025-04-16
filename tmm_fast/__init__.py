@@ -1,5 +1,6 @@
 from .vectorized_tmm_dispersive_multistack import coh_vec_tmm_disp_mstack as coh_tmm
 from .vectorized_incoherent_tmm import inc_vec_tmm_disp_lstack as inc_tmm
+from .vectorized_tmm_dispersive_multistack_jax import coh_vec_tmm_disp_mstack as coh_tmm_jax
 
 
 from .plotting_helper import plot_stacks
